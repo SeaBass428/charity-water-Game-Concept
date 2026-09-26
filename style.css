@@ -200,54 +200,33 @@ body {
   height: 11.111%;
 }
 
-.outerpipe {
+.terminal {
+  position: absolute;
+  inset: 0;
+}
+
+.terminal svg {
+  display: block;
   width: 100%;
   height: 100%;
-  border: 2px solid var(--ink);
-  background: #9ca1a3;
+  overflow: visible;
 }
 
-.source .outerpipe,
-.goal .outerpipe {
-  position: absolute;
+.terminal .body {
+  fill: #969b9d;
+  stroke: #080808;
+  stroke-width: 4;
 }
 
-.source .outerpipe {
-  top: 22.5%;
-  left: 0;
-  width: 100%;
-  height: 55%;
+.terminal .rim-outer {
+  fill: #969b9d;
+  stroke: #080808;
+  stroke-width: 4;
 }
 
-.goal .outerpipe {
-  right: 22.5%;
-  bottom: 0;
-  width: 55%;
-  height: 100%;
-}
-
-.mouth {
-  position: absolute;
-  width: 100%;
-  height: 28%;
-  border: 3px solid var(--ink);
-  border-radius: 50%;
-  background: var(--ink);
-  box-shadow: inset 0 0 0 5px #999;
-}
-
-.source .mouth {
-  top: 22.5%;
-  right: 4%;
-  width: 28%;
-  height: 55%;
-}
-
-.goal .mouth {
-  top: 4%;
-  left: 22.5%;
-  width: 55%;
-  height: 28%;
+.terminal .opening {
+  fill: #090909;
+  stroke: none;
 }
 
 .message {
