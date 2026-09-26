@@ -1,36 +1,39 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Pipe Feed</title>
-<style>
-:root{--blue:#2e67ae;--peach:#f4c38f;--cyan:#0aaee8;--ink:#101010;--pipe:#969b9d;--cell:min(10.8vw,48px)}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#fff;color:#000;font-family:"Courier New",monospace}body{display:flex;justify-content:center}.game{width:min(100%,760px);min-height:100vh;padding-bottom:22px}.banner{height:100px;background:var(--blue);display:grid;place-items:center;border-bottom:2px solid #aaa}.banner h1{margin:0;color:white;font-family:Impact,"Arial Black",sans-serif;font-size:clamp(42px,8vw,58px);letter-spacing:1px}.hud{width:min(84vw,430px);margin:27px auto 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:center}.tag{background:#08aee7;border:2px solid #000;box-shadow:1px 1px 0 #000;padding:1px 5px;font-weight:700;font-size:clamp(14px,3.6vw,18px);line-height:1;text-align:center;white-space:nowrap}.board-wrap{position:relative;width:min(84vw,430px);margin:auto;padding:0}.board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:8/9;background:var(--peach);border:4px solid #111;touch-action:manipulation}.cell{position:relative;border-right:2px solid #111;border-bottom:2px solid #111;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}.cell:nth-child(8n){border-right:0}.cell:nth-last-child(-n+8){border-bottom:0}.cell.fixed{cursor:default}.pipe{position:absolute;inset:8%;transform:rotate(var(--r));transition:transform .13s ease}.pipe svg{width:100%;height:100%;overflow:visible}.pipe path,.pipe line{stroke:var(--pipe);stroke-width:16;fill:none;stroke-linecap:butt;stroke-linejoin:round}.pipe .edge{stroke:#111;stroke-width:21}.pipe .waterEdge{stroke:#111;stroke-width:12}.pipe .water{stroke:var(--cyan);stroke-width:8}.wet .pipe .waterEdge,.wet .pipe .water{display:block}.pipe .waterEdge,.pipe .water{display:none}.source,.goal{position:absolute;width:8.5%;height:14%;z-index:4;pointer-events:none}.source{left:-1%;top:-4.5%}.goal{right:-1%;bottom:-4.5%}.outerpipe{width:100%;height:100%;background:#9ca1a3;border:2px solid #111}.source .outerpipe,.goal .outerpipe{position:absolute}.source .outerpipe{left:20%;top:0;height:100%;}.goal .outerpipe{right:20%;bottom:0;height:100%}.mouth{position:absolute;width:100%;height:28%;border-radius:50%;background:#111;border:3px solid #111;box-shadow:inset 0 0 0 5px #999}.source .mouth{left:0;bottom:4%}.goal .mouth{left:0;top:4%}.controls{width:min(84vw,430px);margin:15px auto 0;display:flex;justify-content:center;gap:10px}.btn{font:700 16px "Courier New",monospace;background:#08aee7;border:2px solid #000;box-shadow:2px 2px 0 #000;padding:7px 14px;cursor:pointer}.btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #000}.message{height:24px;text-align:center;margin:10px auto 0;font-weight:bold;font-size:15px}.flash{animation:flash .25s 2}@keyframes flash{50%{background:#fff}}@media(min-width:700px){.game{padding-top:0}.banner{height:115px}.hud{margin-top:30px}.board-wrap,.board,.controls{max-width:480px}.board-wrap{width:480px}.controls{width:480px}.hud{width:480px}}
-</style></head>
-<body><main class="game">
-<header class="banner"><h1>PIPE FEED</h1></header>
-<section class="hud"><div class="tag" id="level">Level 1</div><div class="tag" id="score">Score: 0</div><div class="tag" id="timer">01:00</div></section>
-<div class="board-wrap"><div class="source"><div class="outerpipe"></div><div class="mouth"></div></div><div id="board" class="board" aria-label="Pipe puzzle board"></div><div class="goal"><div class="outerpipe"></div><div class="mouth"></div></div></div>
-<div class="message" id="message">Tap pipes to rotate them. Connect blue water to the drain.</div>
-<div class="controls"><button class="btn" id="restart">Restart</button><button class="btn" id="flow">Start Water</button></div>
-</main>
-<script>
-const N=1,E=2,S=4,W=8, dirs=[N,E,S,W], delta={1:[-1,0],2:[0,1],4:[1,0],8:[0,-1]}, opp={1:S,2:W,4:N,8:E};
-const boardEl=document.querySelector('#board'),msg=document.querySelector('#message'),scoreEl=document.querySelector('#score'),timerEl=document.querySelector('#timer'),levelEl=document.querySelector('#level');
-let grid=[], score=0, level=1, seconds=60, ticking=null, flowing=false;
-const templates={straight:[W,E],corner:[N,E]};
-function rotDir(d,r){for(let i=0;i<r;i++)d=d===N?E:d===E?S:d===S?W:N;return d}
-function openings(t,r){return templates[t].map(d=>rotDir(d,r))}
-function pipeSVG(t){let p=t==='straight'?'<line class="edge" x1="0" y1="50" x2="100" y2="50"/><line x1="0" y1="50" x2="100" y2="50"/><line class="waterEdge" x1="0" y1="50" x2="100" y2="50"/><line class="water" x1="0" y1="50" x2="100" y2="50"/>':'<path class="edge" d="M50 0 V50 H100"/><path d="M50 0 V50 H100"/><path class="waterEdge" d="M50 0 V50 H100"/><path class="water" d="M50 0 V50 H100"/>';return `<svg viewBox="0 0 100 100" aria-hidden="true">${p}</svg>`}
-function buildSolution(){let path=[[0,0]],r=0,c=0;while(r<8||c<7){let choices=[];if(c<7)choices.push([r,c+1]);if(r<8)choices.push([r+1,c]);let next=choices[Math.floor(Math.random()*choices.length)];[r,c]=next;path.push(next)}return path}
-function neededFor(path,i){let ds=[];let [r,c]=path[i];for(const j of [i-1,i+1])if(path[j]){let [rr,cc]=path[j];if(rr<r)ds.push(N);else if(rr>r)ds.push(S);else if(cc<c)ds.push(W);else ds.push(E)}if(i===0)ds.push(W);if(i===path.length-1)ds.push(S);return ds}
-function typeRotFor(ds){for(const t of Object.keys(templates))for(let r=0;r<4;r++){let o=openings(t,r);if(ds.every(x=>o.includes(x))&&o.every(x=>ds.includes(x)))return[t,r]}return['corner',0]}
-function newGame(){clearInterval(ticking);seconds=Math.max(35,60-(level-1)*4);flowing=false;grid=Array.from({length:9},()=>Array(8));let path=buildSolution(),set=new Set(path.map(x=>x.join(',')));for(let r=0;r<9;r++)for(let c=0;c<8;c++){let t=Math.random()<.48?'straight':'corner',sol=0;if(set.has(`${r},${c}`)){let i=path.findIndex(p=>p[0]===r&&p[1]===c);[t,sol]=typeRotFor(neededFor(path,i))}let rot=Math.floor(Math.random()*4);grid[r][c]={t,rot,sol,onPath:set.has(`${r},${c}`)}}render();msg.textContent='Tap pipes to rotate them. Connect blue water to the drain.';timerEl.textContent=format(seconds);ticking=setInterval(()=>{if(seconds>0){seconds--;timerEl.textContent=format(seconds)}else{clearInterval(ticking);msg.textContent='Time’s up — rotate and restart to try again.'}},1000)}
-function render(){boardEl.innerHTML='';for(let r=0;r<9;r++)for(let c=0;c<8;c++){let x=grid[r][c],cell=document.createElement('div');cell.className='cell';cell.dataset.r=r;cell.dataset.c=c;cell.innerHTML=`<div class="pipe" style="--r:${x.rot*90}deg">${pipeSVG(x.t)}</div>`;cell.onclick=()=>rotate(r,c,cell);boardEl.appendChild(cell)}}
-function rotate(r,c,cell){if(flowing||seconds<=0)return;grid[r][c].rot=(grid[r][c].rot+1)%4;cell.querySelector('.pipe').style.setProperty('--r',grid[r][c].rot*90+'deg')}
-function format(s){return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
-function startFlow(){if(flowing||seconds<=0)return;flowing=true;document.querySelectorAll('.cell').forEach(x=>x.classList.remove('wet'));let r=0,c=0,entry=W,visited=new Set(),step=0;function advance(){let key=`${r},${c}`;if(visited.has(key)){fail('The water looped back on itself.');return}visited.add(key);let cell=document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`),x=grid[r][c],ops=openings(x.t,x.rot);if(!ops.includes(entry)){fail('Leak! That pipe does not connect.');return}cell.classList.add('wet');let exits=ops.filter(d=>d!==entry);if(!exits.length){fail('Dead end.');return}let out=exits[0];if(r===8&&c===7&&out===S){win();return}let [dr,dc]=delta[out],nr=r+dr,nc=c+dc;if(nr<0||nr>8||nc<0||nc>7){fail('The water ran off the board.');return}let next=grid[nr][nc];if(!openings(next.t,next.rot).includes(opp[out])){setTimeout(()=>fail('Leak! Two pipes do not line up.'),180);return}r=nr;c=nc;entry=opp[out];step++;setTimeout(advance,105)}advance()}
-function fail(t){flowing=false;msg.textContent=t+' Keep rotating and try again.';boardEl.classList.add('flash');setTimeout(()=>boardEl.classList.remove('flash'),550)}
-function win(){clearInterval(ticking);let gain=100+seconds*5;score+=gain;scoreEl.textContent='Score: '+score;msg.textContent=`Goal reached! +${gain} points.`;setTimeout(()=>{level++;levelEl.textContent='Level '+level;newGame()},1100)}
-document.querySelector('#restart').onclick=newGame;document.querySelector('#flow').onclick=startFlow;newGame();
-</script></body></html>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pipe Feed</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="game">
+    <header class="banner">
+      <h1>PIPE FEED</h1>
+    </header>
+    <section class="game-layout" aria-label="Pipe Feed game">
+      <aside class="info-panel">
+        <section class="hud" aria-label="Game status">
+          <div class="tag" id="level">Level 1</div>
+          <div class="tag" id="score">Score: 0</div>
+          <div class="tag" id="timer" aria-live="off">01:00</div>
+        </section>
+        <p class="message" id="message" aria-live="polite">Rotate the pipes to guide the water to the drain.</p>
+      </aside>
+      <div class="board-wrap">
+        <div class="source" aria-hidden="true"><div class="outerpipe"></div><div class="mouth"></div></div>
+        <div id="board" class="board" role="group" aria-label="Pipe puzzle board"></div>
+        <div class="goal" aria-hidden="true"><div class="outerpipe"></div><div class="mouth"></div></div>
+      </div>
+      <aside class="controls-panel">
+        <div class="controls" aria-label="Game controls">
+          <button class="btn" id="restart" type="button">Restart</button>
+          <button class="btn" id="pause" type="button" aria-pressed="false">Pause</button>
+          <button class="btn" id="flow" type="button">Start Water</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
