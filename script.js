@@ -63,6 +63,37 @@ function buildSolution() {
     path.push([row, column]);
   }
 
+  const detours = Math.min(12, Math.floor((level - 1) / 2) * 2);
+  for (let detour = 0; detour < detours; detour++) {
+    const occupied = new Set(path.map(([pathRow, pathColumn]) => `${pathRow},${pathColumn}`));
+    const candidates = [];
+
+    for (let index = 0; index < path.length - 1; index++) {
+      const [fromRow, fromColumn] = path[index];
+      const [toRow, toColumn] = path[index + 1];
+      const perpendiculars = fromRow === toRow
+        ? [[-1, 0], [1, 0]]
+        : [[0, -1], [0, 1]];
+
+      for (const [rowOffset, columnOffset] of perpendiculars) {
+        const first = [fromRow + rowOffset, fromColumn + columnOffset];
+        const second = [toRow + rowOffset, toColumn + columnOffset];
+        const inBounds = ([candidateRow, candidateColumn]) =>
+          candidateRow >= 0 && candidateRow < 9 && candidateColumn >= 0 && candidateColumn < 8;
+
+        if (inBounds(first) && inBounds(second) &&
+            !occupied.has(`${first[0]},${first[1]}`) &&
+            !occupied.has(`${second[0]},${second[1]}`)) {
+          candidates.push({ index, first, second });
+        }
+      }
+    }
+
+    if (candidates.length === 0) break;
+    const { index, first, second } = candidates[Math.floor(Math.random() * candidates.length)];
+    path.splice(index + 1, 0, first, second);
+  }
+
   return path;
 }
 
@@ -133,18 +164,23 @@ function newGame() {
   flowing = false;
 
   const path = buildSolution();
-  const pathCells = new Set(path.map(([row, column]) => `${row},${column}`));
+  const pathCells = new Map(path.map(([row, column], index) => [`${row},${column}`, index]));
   grid = Array.from({ length: 9 }, () => Array(8));
 
   for (let row = 0; row < 9; row++) {
     for (let column = 0; column < 8; column++) {
       const key = `${row},${column}`;
       let type = Math.random() < 0.48 ? 'straight' : 'corner';
+      let rotation = Math.floor(Math.random() * 4);
       if (pathCells.has(key)) {
-        const index = path.findIndex(([pathRow, pathColumn]) => pathRow === row && pathColumn === column);
-        [type] = typeAndRotationFor(neededFor(path, index));
+        const [pathType, solutionRotation] = typeAndRotationFor(neededFor(path, pathCells.get(key)));
+        type = pathType;
+        const scramble = type === 'straight'
+          ? (Math.random() < 0.5 ? 1 : 3)
+          : 1 + Math.floor(Math.random() * 3);
+        rotation = (solutionRotation + scramble) % 4;
       }
-      grid[row][column] = { type, rotation: Math.floor(Math.random() * 4) };
+      grid[row][column] = { type, rotation };
     }
   }
 
