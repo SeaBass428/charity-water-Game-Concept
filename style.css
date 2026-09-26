@@ -329,9 +329,9 @@ body {
   }
 
   .board-wrap {
-    width: min(90%, 430px, calc((100svh - 275px) * 0.8889));
+    width: min(90%, 430px, calc((100svh - 275px) * 0.8));
     margin-left: 10%;
-    margin-bottom: 0;
+    margin-bottom: calc((100svh - 275px) * 0.1);
   }
 
   .hud {
